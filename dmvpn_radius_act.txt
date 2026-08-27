@@ -1,0 +1,462 @@
+CCNP Day4
+
+Please Fork the ff on github:
+- https://github.com/art-stacks/rivan_day2
+
+EVENG- WEB GUI
+  login: rivan
+  pass:  C1sc0123
+
+
+vManager    32897
+Cloud       32902
+eluzon      32900
+eVisayas    32903
+CSW-LUZON   32905
+CSW-VISAYAS 32906
+
+SDWAN Devices
+  User: admin
+  Pass: C1sc0123
+
+
+Verify services
+  request nms all status 
+
+
+
+Control Plane
+Data Plane
+Management Plane
+
+
+
+SDN SD Controller
+
+
+               User
+              --------
+               Meraki Dashboard
+               NBI
+               |   HTTPS
+              v
+               SDN Controller (APIC  DNA)
+                 |
+                 v
+
+               RESTCONF
+               NETCONF
+                 |
+              END Points
+
+vManager  - cManage
+vBond     - cValidater
+vSmart    - cController
+vEdge     - cEdge
+
+vshell
+cat /home/admin/pkicerts/rivanpki.ca
+
+
+request root-cert-chain install
+request certificate install
+request csr upload
+show certificate serial
+ request certificate install /home/admin/pkicerts/grant.ca 
+
+crypto pki server rivanpki request pkcs10 terminal
+
+!@vManage, vBond
+request vedge add chassis-num 5f4be17b-8e6a-46ae-9467-35b26f5d569a  serial-num 07
+
+
+
+!@vEDGEMINDANAO
+
+vshell
+cd /home/admin/pkicerts/
+vi rivanpki.ca
+
+
+CCNP-WIN
+
+  C1sc0123
+
+
+
+DMVPN
+
+IKE PHASE 1
+Encryption
+Hashing
+DH
+
+- PROPOSAL
+- POLICY
+- KEYRING
+- IKEV2 PROFILE
+
+
+@E1,E2
+conf t
+ crypto ikev2 proposal PROP1
+  encryption aes-cbc-256
+  integrity sha256
+  group 14
+ !
+ crypto ikev2 proposal PROP2
+  encryption aes-gcm-256
+  prf sha256
+  group 14
+ !
+ crypto ikev2 policy IKEV2-POL1
+  proposal PROP1
+  proposal PROP2
+ !
+ crypto ikev2 keyring KEY1
+  peer DMVPN-EDGES
+   address 0.0.0.0  0.0.0.0
+   pre-shared-key C1sc0123
+ !
+ crypto ikev2 profile IKEV2-PROF1
+  match identity remote address 0.0.0.0  0.0.0.0
+  authentication remote pre-share
+  authentication local pre-share
+  keyring local KEY1
+  lifetime 120
+  end
+
+
+__SPOKES SITES__
+!@E3,E4,E5
+conf t
+ crypto ikev2 proposal PROP1
+  encryption aes-cbc-256
+  integrity sha256
+  group 14
+ !
+ crypto ikev2 proposal PROP2
+  encryption aes-gcm-256
+  prf sha256
+  group 14
+ !
+ crypto ikev2 policy IKEV2-POL1
+  proposal PROP1
+  proposal PROP2
+ !
+ crypto ikev2 keyring KEY1
+  peer HUB1
+   address 1.10.1.10 255.255.255.255
+   pre-shared-key C1sc0123
+  peer HUB2
+   address 2.20.2.20 255.255.255.255
+   pre-shared-key C1sc0123
+ !
+ crypto ikev2 profile IKEV2-PROF1
+  match identity remote address 1.10.1.10
+  match identity remote address 2.20.2.20
+  authentication remote pre-share
+  authentication local pre-share
+  keyring local KEY1
+  lifetime 120
+  end
+
+
+
+--PHASE 1
+
+IKE SA Tunnel
+
+--
+IPSEC PHASE 2
+- TRANSFORM SET
+- IPSEC PROFILE
+
+
+!@E1,E2,E3,E4,E5
+conf t
+ crypto ipsec transform-set TS1 esp-aes 256  esp-sha256-hmac
+  mode tunnel
+ crypto ipsec transform-set TS2 esp-gcm 256 
+  mode tunnel
+ !
+ crypto ipsec profile IPSEC-PROF1
+  set transform-set TS1 TS2
+  set ikev2-profile IKEV2-PROF1
+  set pfs group14
+  end
+
+
+
+__NHRP__   __HUBS__
+!@E1
+conf t
+ int tunnel0
+  ip add 172.16.1.254 255.255.255.0
+  tunnel mode gre multipoint
+  tunnel source e0/1
+  tunnel protection ipsec profile IPSEC-PROF1
+  ip nhrp authentication C1sc0123
+  ip nhrp network-id 123
+  ip nhrp map multicast dynamic
+  ip nhrp redirect
+ !
+ no ip access-list extended NAT
+ ip access-list extended NAT
+  deny ip host 10.1.1.1 host 10.2.2.1
+  deny ip host 10.1.1.1 192.168.3.0 0.0.0.255
+  deny ip host 10.1.1.1 192.168.4.0 0.0.0.255
+  deny ip host 10.1.1.1 192.168.5.0 0.0.0.255
+  permit ip 10.1.1.0 0.0.0.3 any
+  end
+
+
+
+
+
+!@E2
+conf t
+ int tunnel0
+  ip add 172.16.1.253 255.255.255.0
+  tunnel mode gre multipoint
+  tunnel source e0/1
+  tunnel protection ipsec profile IPSEC-PROF1
+  ip nhrp authentication C1sc0123
+  ip nhrp network-id 123
+  ip nhrp map multicast dynamic
+  ip nhrp redirect
+ !
+ no ip access-list extended NAT
+ ip access-list extended NAT
+  deny ip host 10.2.2.1 host 10.1.1.1
+  deny ip host 10.2.2.1 192.168.3.0 0.0.0.255
+  deny ip host 10.2.2.1 192.168.4.0 0.0.0.255
+  deny ip host 10.2.2.1 192.168.5.0 0.0.0.255
+  permit ip 10.2.2.0 0.0.0.3 any
+  end
+
+
+
+
+
+
+
+!@E3
+conf t
+ int tunnel0
+  ip add 172.16.1.3 255.255.255.0
+  tunnel mode gre multipoint
+  tunnel protection ipsec profile IPSEC-PROF1
+  tunnel source e0/1
+  ip nhrp authentication C1sc0123
+  ip nhrp network-id 123
+  ip nhrp map 172.16.1.254   1.10.1.10
+  ip nhrp map 172.16.1.253   2.20.2.20
+  ip nhrp map multicast 1.10.1.10
+  ip nhrp map multicast 2.20.2.20
+  ip nhrp nhs 172.16.1.254
+  ip nhrp nhs 172.16.1.253
+  ip nhrp shortcut
+!
+ no ip access-list extended NAT
+ ip access-list extended NAT
+  deny ip host 192.168.3.101 host 10.1.1.1
+  deny ip host 192.168.3.101 host 10.2.2.1
+  deny ip host 192.168.3.101 192.168.4.0 0.0.0.255
+  deny ip host 192.168.3.101 192.168.5.0 0.0.0.255
+  permit ip 192.168.3.0 0.0.0.255 any
+  end
+
+
+
+
+
+
+!@E4
+conf t
+ int tunnel0
+  ip add 172.16.1.4 255.255.255.0
+  tunnel mode gre multipoint
+  tunnel source e0/1
+  ip nhrp authentication C1sc0123
+  ip nhrp network-id 123
+  ip nhrp map 172.16.1.254   1.10.1.10
+  ip nhrp map 172.16.1.253   2.20.2.20
+  ip nhrp map multicast 1.10.1.10
+  ip nhrp map multicast 2.20.2.20
+  ip nhrp nhs 172.16.1.254
+  ip nhrp nhs 172.16.1.253
+  ip nhrp shortcut
+  tunnel protection ipsec profile IPSEC-PROF1
+ !
+ no ip access-list extended NAT
+ ip access-list extended NAT
+  deny ip host 192.168.4.101 host 10.1.1.1
+  deny ip host 192.168.4.101 host 10.2.2.1
+  deny ip host 192.168.4.101 192.168.3.0 0.0.0.255
+  deny ip host 192.168.4.101 192.168.5.0 0.0.0.255
+  permit ip 192.168.4.0 0.0.0.255 any
+  end
+
+
+
+
+
+!@E5
+conf t
+ int tunnel0
+  ip add 172.16.1.5 255.255.255.0
+  tunnel mode gre multipoint
+  tunnel source e0/1
+  ip nhrp authentication C1sc0123
+  ip nhrp network-id 123
+  ip nhrp map 172.16.1.254   1.10.1.10
+  ip nhrp map 172.16.1.253   2.20.2.20
+  ip nhrp map multicast 1.10.1.10
+  ip nhrp map multicast 2.20.2.20
+  ip nhrp nhs 172.16.1.254
+  ip nhrp nhs 172.16.1.253
+  ip nhrp shortcut
+  tunnel protection ipsec profile IPSEC-PROF1
+ !
+ no ip access-list extended NAT
+ ip access-list extended NAT
+  deny ip host 192.168.5.101 host 10.1.1.1
+  deny ip host 192.168.5.101 host 10.2.2.1
+  deny ip host 192.168.5.101 192.168.3.0 0.0.0.255
+  deny ip host 192.168.5.101 192.168.4.0 0.0.0.255
+  permit ip 192.168.5.0 0.0.0.255 any
+  end
+
+
+!E1, E2:
+conf t
+int tunnel0
+	no ip split-horizon eigrp 100
+	no ip next-hop-self eigrp 100
+	end
+
+
+
+!E3:
+conf t
+crypto ikev2 keyring KEY1
+ peer HUB1
+  address 1.10.1.10
+  pre-shared-key C1sc0123
+ !
+ peer HUB2
+  address 2.20.2.20
+  pre-shared-key C1sc0123
+ !
+  peer E4
+  address 4.40.4.40
+  pre-shared-key C1sc0123
+  !
+  peer E5
+  address 5.50.5.50
+  pre-shared-key C1sc0123
+  !
+crypto ikev2 profile IKEV2-PROF1
+ match identity remote address 1.10.1.10 255.255.255.255 
+ no match identity remote address 1.10.1.20 255.255.255.255 
+ match identity remote address 2.20.2.20 255.255.255.255 
+  match identity remote address 4.40.4.40 255.255.255.255 
+ match identity remote address 5.50.5.50 255.255.255.255 
+ authentication remote pre-share
+ authentication local pre-share
+ keyring local KEY1
+ lifetime 120
+ 
+ 
+ 
+ 
+ !E4:
+conf t
+crypto ikev2 keyring KEY1
+ peer HUB1
+  address 1.10.1.10
+  pre-shared-key C1sc0123
+ !
+ peer HUB2
+  address 2.20.2.20
+  pre-shared-key C1sc0123
+ !
+  peer E3
+  address 3.30.3.30
+  pre-shared-key C1sc0123
+  !
+  peer E5
+  address 5.50.5.50
+  pre-shared-key C1sc0123
+  !
+crypto ikev2 profile IKEV2-PROF1
+ match identity remote address 1.10.1.10 255.255.255.255 
+ match identity remote address 2.20.2.20 255.255.255.255 
+ match identity remote address 3.30.3.30 255.255.255.255 
+ match identity remote address 5.50.5.50 255.255.255.255 
+ authentication remote pre-share
+ authentication local pre-share
+ keyring local KEY1
+ lifetime 120
+ 
+ 
+  !E5:
+conf t
+crypto ikev2 keyring KEY1
+ peer HUB1
+  address 1.10.1.10
+  pre-shared-key C1sc0123
+ !
+ peer HUB2
+  address 2.20.2.20
+  pre-shared-key C1sc0123
+ !
+  peer E3
+  address 3.30.3.30
+  pre-shared-key C1sc0123
+  !
+  peer E4
+  address 4.40.4.40
+  pre-shared-key C1sc0123
+  !
+crypto ikev2 profile IKEV2-PROF1
+ match identity remote address 1.10.1.10 255.255.255.255 
+ match identity remote address 2.20.2.20 255.255.255.255 
+ match identity remote address 3.30.3.30 255.255.255.255 
+ match identity remote address 4.40.4.40 255.255.255.255 
+ authentication remote pre-share
+ authentication local pre-share
+ keyring local KEY1
+ lifetime 120
+ 
+ 
+ !EDGE:
+ conf t
+ int tunnel0
+ip mtu 1400
+ip tcp adjust-mss 1360
+ bandwidth 100000
+ delay 1000
+ !
+ crypto ipsec fragmentation before-encryption
+ end
+ 
+ !S1:
+ conf t
+ username admin priv 15 secret pass
+ aaa new-model
+ radius server WINRAD
+ address ipv4 10.69.255.4  auth-port 1812 acct-port 1813
+ key keykeymo
+ aaa group server radius RADGROUP
+ server name WINRAD
+ ip vrf forwarding MANAGEMENT
+ ip radius source-int e3/0
+ !
+ aaa authentication login default group RADGROUP local
+ aaa authorization exec default group RADGROUP local
+ !
+ line vty 0 4
+ login authentication default
+ end
