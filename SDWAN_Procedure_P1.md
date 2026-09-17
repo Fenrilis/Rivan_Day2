@@ -1314,6 +1314,255 @@ After connecting to the vEdge CLI, the device should display the configured host
 
 
 
+## STEP 38 - CSW luzon and visayas Configuration:
+
+the next step is have OPSF origination and luzon and visayas must ping to each other's loopback 0
+
+Start the CSW of Luzon and Visayas:
+
+<img width="674" height="183" alt="{6AEAFF78-4798-4291-A7EE-D9F95A49ED8F}" src="https://github.com/user-attachments/assets/6adc8e17-335d-4a4f-ad80-ae3a0e94abb2" />
+
+Then access it through telnet Securecrt and type enable:
+
+IPv4: 208.8.8.187
+
+| Device      | Port  |
+| ---         | ---   |
+| CSW-LUZON   | 32905 |
+| CSW-VISAYAS | 32906 |
+
+Then paste the preconfigs of both:
+
+~~~
+!@CSW-LUZON
+conf t
+ hostname CSW-LUZON
+ enable secret pass
+ service password-encryption
+ no logging console
+ no ip domain lookup
+ username admin priv 15 secret pass
+ line vty 0 14
+  transport input all
+  password pass
+  login local
+  exec-timeout 0 0
+ int lo0
+  ip add 1.1.1.1 255.255.255.255
+  exit
+ int g0/0
+  no sw
+  ip add 172.16.1.2 255.255.255.252
+  no shut
+ int g0/1
+  no sw
+  ip add 10.1.1.2 255.255.255.252
+  no shut
+ router ospf 1
+  router-id 1.1.1.1
+  network 172.16.1.0 0.0.0.3 area 0
+  network 1.1.1.1 0.0.0.0 area 0
+  network 10.1.1.0 0.0.0.3 area 0
+  passive-interface lo0
+  end
+~~~
+
+<br>
+
+~~~
+!@CSW-VISAYAS
+conf t
+ hostname CSW-VISAYAS
+ enable secret pass
+ service password-encryption
+ no logging console
+ no ip domain lookup
+ username admin priv 15 secret pass
+ line vty 0 14
+  transport input all
+  password pass
+  login local
+  exec-timeout 0 0
+ int lo0
+  ip add 2.2.2.2 255.255.255.255
+  exit
+ int g0/0
+  no sw
+  ip add 172.16.5.2 255.255.255.252
+  no shut
+ int g0/1
+  no sw
+  ip add 10.1.2.2 255.255.255.252
+  no shut
+ router ospf 1
+  router-id 2.2.2.2
+  network 172.16.5.0 0.0.0.3 area 0
+  network 2.2.2.2 0.0.0.0 area 0
+  network 10.1.2.0 0.0.0.3 area 0
+  passive-interface lo0
+  end
+~~~
+
+Expected Output:
+
+<img width="1440" height="716" alt="{9E663219-BCD7-46A3-B81B-B1EF35EBFBF0}" src="https://github.com/user-attachments/assets/90277d7e-793c-4cc3-a436-d22e412003fc" />
+
+<img width="1440" height="707" alt="{FDE0D3BB-EAD8-48BB-9804-05422C1D6518}" src="https://github.com/user-attachments/assets/3f876269-18c2-4c9b-ba34-d07fd2894efd" />
+
+
+After configuring both CSW, we must edit create another template and edit the device template in order to reconfigure the vedges cloud:
+
+Navigate:
+
+☰ Menu → Configuration -> Templates -> Feature Template -> Add template -> vEdge Cloud -> VPN -> VPN
+
+<img width="1029" height="373" alt="Select vEdge VPN Feature" src="https://github.com/user-attachments/assets/410b8c46-1654-4f4c-8971-4b3939f35cc8" />
+
+Credentials:
+~~~
+Name: VE-VPN1
+Desc: VE-VPN1
+
+VPN: 1
+NAME: Global: DATA VPN
+
+IPv4 Route: 
+  Prefix: 0.0.0.0/0
+  Gateway: VPN
+  Enable VPN: Global: On
+~~~
+
+<img width="549" height="474" alt="{CC59BE78-1EF9-4435-A0A2-69AF00DDFD33}" src="https://github.com/user-attachments/assets/48bea3d9-2296-4ca6-9df1-934a6279416c" />
+
+<img width="1405" height="312" alt="{9DC65068-A94D-4BDE-B860-990BB35C2C1A}" src="https://github.com/user-attachments/assets/4c0b9eb8-ae87-416f-b307-542d9b619bb1" />
+
+!Click add, expected output:
+
+<img width="1405" height="191" alt="{25035B6B-4EC8-4ACE-A351-4E6043A5ECD1}" src="https://github.com/user-attachments/assets/fe85a242-9d36-4683-a859-a8ee2df2fa5e" />
+
+!Click save:
+
+Expected Output:
+
+<img width="1401" height="44" alt="{B62DED3E-DB4A-4A81-BE6E-5721170495E4}" src="https://github.com/user-attachments/assets/b891f9d3-8022-4c56-9205-77c1a57df1b1" />
+
+Add template -> vEdge Cloud -> Other Templates -> OSPF
+
+<img width="1057" height="481" alt="{B077BB27-F3F0-4618-A4B3-2210195DE4DB}" src="https://github.com/user-attachments/assets/4ad64e8a-7f0a-458b-a96d-0c15721f4d61" />
+
+~~~
+Name: OSPF-VPN1
+Desc: OSPF-VPN1
+
+Redistribute:
+  Protocol: omp
+
+Area:
+  Area Num: 0
+  Interface:
+    Interface Name: ge0/0
+	
+	ADD x2
+
+Advance:
+  Originate: Global: On
+  Always: Global: On
+~~~
+
+!Under redistribute click "New Redistribute"
+!Click Add
+
+<img width="1407" height="347" alt="{38828DCF-AFE9-4BDA-89EF-E282C0631084}" src="https://github.com/user-attachments/assets/ece11c4a-3dc3-47ee-a23e-c29879d5ae7c" />
+
+!Under Area click "New Area"
+
+!Click Add Interface:
+
+<img width="401" height="39" alt="{2026DB67-F156-4BE0-B5C1-CAB025F48BCD}" src="https://github.com/user-attachments/assets/c0706b89-a51c-4bbd-8add-f40045bb2069" />
+
+!Click Add Interface again:
+
+!Click Add x2:
+
+Expected output:
+
+<img width="1374" height="159" alt="{77DDEC3C-CDF4-4C15-AE63-B68E2F1D0BDF}" src="https://github.com/user-attachments/assets/54616167-1ef0-4da9-913f-2c3c79c3d542" />
+
+under advanced
+
+<img width="544" height="478" alt="{2092A04B-B6D4-4E66-ACBE-BE1B5EF09F53}" src="https://github.com/user-attachments/assets/8f40dfe0-272d-49e5-ab74-b4d205ac8969" />
+
+!Click save
+
+Expected output:
+
+<img width="1391" height="37" alt="{F1A74198-AC18-4426-8142-FC1C07652D8B}" src="https://github.com/user-attachments/assets/d092e0b5-6232-4694-9eb1-b97e10b93d8f" />
+
+!Then edit the device template:
+
+☰ Menu → Configuration -> Templates -> Device Templates
+VE-> 3 dots - > Edit
+
+<img width="1409" height="122" alt="{24AFBD9A-88D9-4644-9E74-8E990E7ED1AD}" src="https://github.com/user-attachments/assets/acebe6ed-9dcb-421b-8fa5-97020c7294ef" />
+
+Credentials:
+
+Service VPN:
+  Add VPN: VE-VPN1
+    OSPF: VE-OSPF-VPN1
+	VPN Interface: VE-VPNINT-VPN0-GIG00
+
+Remove GIG00 From VPN 0
+
+
+<img width="1415" height="371" alt="{6161F6D4-266A-4E2F-B2BC-5C0F0C99A972}" src="https://github.com/user-attachments/assets/1d39f690-75c1-4264-a125-03e2372f1c78" />
+
+Under Service VPN click "add VPN"
+
+Select VE-VPN1 then click the > button in order to be selected
+
+<img width="1072" height="650" alt="{08AB9563-F7EC-4D44-9E10-0C6A4FFD958C}" src="https://github.com/user-attachments/assets/a93488d9-8ec8-4fbc-9abd-c6ba59159d0d" />
+
+!Click Next
+
+<img width="159" height="51" alt="{33F2D323-BFE9-4B35-B11A-AC897180D710}" src="https://github.com/user-attachments/assets/c9f14af1-672c-4457-9b6b-a80ded03341b" />
+
+Click VPN Interface -> select INT-VPN0-GE00 
+
+<img width="1077" height="648" alt="{F7A5C33D-6D3E-47AB-831B-E80B9472B7BE}" src="https://github.com/user-attachments/assets/0f9ab928-c568-4f6d-8594-b6afeabd35bf" />
+
+Click add
+
+Expected Output:
+
+<img width="1424" height="277" alt="{FB3B28B7-E8DA-4B59-BFF5-4C4682D789CC}" src="https://github.com/user-attachments/assets/5e95dc20-6f44-4ce6-bb27-b9bdb17ef830" />
+
+Click update:
+
+Re-Enter the values of Vedge Luzon and Visayas:
+3dots -> Edit Device Template:
+
+<img width="1403" height="127" alt="{2031C412-6C68-4F52-A33C-2660297ECDD4}" src="https://github.com/user-attachments/assets/c7cd29cf-1838-41e1-bb7c-12f67ff25e01" />
+
+Expected Output:
+
+<img width="1413" height="110" alt="{D92930F0-F98F-48DE-9EF2-08AC53B7C2D0}" src="https://github.com/user-attachments/assets/d0ec7614-56b8-4def-9036-379b8aa3129b" />
+
+Click Next -> Configure Devices -> Click the box - Ok
+
+Wait for 1 minute for Success Validation:
+
+Expected Output:
+
+<img width="1416" height="325" alt="{3E84DA4F-E02C-4F61-8629-2BF8B34E0C66}" src="https://github.com/user-attachments/assets/d000b4e6-ba91-4535-9c2c-d4f284df1cc7" />
+
+Then access the CLI of CSW luzon and visayas and verify if the Lo0 is pingable:
+
+
+
+
+
+
 
 
 
