@@ -1,4 +1,3 @@
-<img width="1425" height="170" alt="{77333B24-D324-4638-B247-DC22D9FC1A64}" src="https://github.com/user-attachments/assets/e4cd0799-85ba-43b9-9b1d-c0cf23ad371d" /># RivanCorp SD-WAN Deployment Lab
 ## Step-by-Step Procedure
 
 This guide covers the initial setup and startup procedure for the RivanCorp SD-WAN Deployment Lab, including EVE-NG access, vManage startup, and SecureCRT console access.
