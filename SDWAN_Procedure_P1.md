@@ -1312,28 +1312,53 @@ After connecting to the vEdge CLI, the device should display the configured host
 
 ---
 
+# OSPF and Service VPN Configuration
 
+## STEP 38 - Start the CSW-LUZON and CSW-VISAYAS Nodes
 
-## STEP 38 - CSW luzon and visayas Configuration:
+The next stage is to configure **OSPF** between the vEdge devices and their respective campus switches.
 
-the next step is have OPSF origination and luzon and visayas must ping to each other's loopback 0
+The final goal is to establish routing between the Luzon and Visayas sites so that their **Loopback 0 interfaces can communicate with each other**.
 
-Start the CSW of Luzon and Visayas:
+Start the following nodes in the EVE-NG topology:
 
-<img width="674" height="183" alt="{6AEAFF78-4798-4291-A7EE-D9F95A49ED8F}" src="https://github.com/user-attachments/assets/6adc8e17-335d-4a4f-ad80-ae3a0e94abb2" />
+- `CSW-LUZON`
+- `CSW-VISAYAS`
 
-Then access it through telnet Securecrt and type enable:
+<img width="674" height="183" alt="Start CSW-LUZON and CSW-VISAYAS" src="https://github.com/user-attachments/assets/6adc8e17-335d-4a4f-ad80-ae3a0e94abb2" />
 
-IPv4: 208.8.8.187
+---
 
-| Device      | Port  |
-| ---         | ---   |
-| CSW-LUZON   | 32905 |
-| CSW-VISAYAS | 32906 |
+## STEP 39 - Access the CSW Devices Through SecureCRT
 
-Then paste the preconfigs of both:
+Access both CSW devices through **SecureCRT using Telnet**.
 
-~~~
+Use the following IP address:
+
+```text
+208.8.8.187
+```
+
+Use the appropriate Telnet port for each device:
+
+| Device | Telnet Port |
+| --- | ---: |
+| CSW-LUZON | `32905` |
+| CSW-VISAYAS | `32906` |
+
+After connecting to each device, enter privileged EXEC mode:
+
+```text
+enable
+```
+
+---
+
+## STEP 40 - Configure CSW-LUZON
+
+Access the **CSW-LUZON** CLI and paste the following preconfiguration:
+
+```text
 !@CSW-LUZON
 conf t
  hostname CSW-LUZON
@@ -1365,11 +1390,31 @@ conf t
   network 10.1.1.0 0.0.0.3 area 0
   passive-interface lo0
   end
-~~~
+```
 
-<br>
+### CSW-LUZON Configuration Summary
 
-~~~
+| Component | Configuration |
+| --- | --- |
+| Hostname | `CSW-LUZON` |
+| Loopback 0 | `1.1.1.1/32` |
+| GigabitEthernet0/0 | `172.16.1.2/30` |
+| GigabitEthernet0/1 | `10.1.1.2/30` |
+| OSPF Process | `1` |
+| OSPF Router ID | `1.1.1.1` |
+| OSPF Area | `0` |
+
+### Expected Output
+
+<img width="1440" height="716" alt="CSW-LUZON Configuration Expected Output" src="https://github.com/user-attachments/assets/90277d7e-793c-4cc3-a436-d22e412003fc" />
+
+---
+
+## STEP 41 - Configure CSW-VISAYAS
+
+Access the **CSW-VISAYAS** CLI and paste the following preconfiguration:
+
+```text
 !@CSW-VISAYAS
 conf t
  hostname CSW-VISAYAS
@@ -1401,162 +1446,459 @@ conf t
   network 10.1.2.0 0.0.0.3 area 0
   passive-interface lo0
   end
-~~~
+```
 
-Expected Output:
+### CSW-VISAYAS Configuration Summary
 
-<img width="1440" height="716" alt="{9E663219-BCD7-46A3-B81B-B1EF35EBFBF0}" src="https://github.com/user-attachments/assets/90277d7e-793c-4cc3-a436-d22e412003fc" />
+| Component | Configuration |
+| --- | --- |
+| Hostname | `CSW-VISAYAS` |
+| Loopback 0 | `2.2.2.2/32` |
+| GigabitEthernet0/0 | `172.16.5.2/30` |
+| GigabitEthernet0/1 | `10.1.2.2/30` |
+| OSPF Process | `1` |
+| OSPF Router ID | `2.2.2.2` |
+| OSPF Area | `0` |
 
-<img width="1440" height="707" alt="{FDE0D3BB-EAD8-48BB-9804-05422C1D6518}" src="https://github.com/user-attachments/assets/3f876269-18c2-4c9b-ba34-d07fd2894efd" />
+### Expected Output
 
+<img width="1440" height="707" alt="CSW-VISAYAS Configuration Expected Output" src="https://github.com/user-attachments/assets/3f876269-18c2-4c9b-ba34-d07fd2894efd" />
 
-After configuring both CSW, we must edit create another template and edit the device template in order to reconfigure the vedges cloud:
+> [!NOTE]
+> At this stage, both CSW devices have their local OSPF configurations. The vEdge configuration must now be updated to provide the required service VPN and OSPF connectivity between the sites.
 
-Navigate:
+---
 
-☰ Menu → Configuration -> Templates -> Feature Template -> Add template -> vEdge Cloud -> VPN -> VPN
+# vEdge Service VPN Configuration
+
+## STEP 42 - Create the VE-VPN1 Feature Template
+
+Create a new feature template for **VPN 1**, which will be used as the **Data/Service VPN**.
+
+From the vManage GUI, navigate to:
+
+```text
+☰ Menu
+    ↓
+Configuration
+    ↓
+Templates
+    ↓
+Feature Templates
+    ↓
+Add Template
+    ↓
+vEdge Cloud
+    ↓
+VPN
+    ↓
+VPN
+```
+
+Select the **VPN** feature.
 
 <img width="1029" height="373" alt="Select vEdge VPN Feature" src="https://github.com/user-attachments/assets/410b8c46-1654-4f4c-8971-4b3939f35cc8" />
 
-Credentials:
-~~~
+Configure the feature template using the following values:
+
+```text
 Name: VE-VPN1
-Desc: VE-VPN1
+Description: VE-VPN1
 
 VPN: 1
-NAME: Global: DATA VPN
 
-IPv4 Route: 
+Name:
+  Global: DATA VPN
+
+IPv4 Route:
   Prefix: 0.0.0.0/0
   Gateway: VPN
-  Enable VPN: Global: On
-~~~
 
-<img width="549" height="474" alt="{CC59BE78-1EF9-4435-A0A2-69AF00DDFD33}" src="https://github.com/user-attachments/assets/48bea3d9-2296-4ca6-9df1-934a6279416c" />
+  Enable VPN:
+    Global: On
+```
 
-<img width="1405" height="312" alt="{9DC65068-A94D-4BDE-B860-990BB35C2C1A}" src="https://github.com/user-attachments/assets/4c0b9eb8-ae87-416f-b307-542d9b619bb1" />
+Configure the basic VPN information:
 
-!Click add, expected output:
+<img width="549" height="474" alt="VE-VPN1 Basic Configuration" src="https://github.com/user-attachments/assets/48bea3d9-2296-4ca6-9df1-934a6279416c" />
 
-<img width="1405" height="191" alt="{25035B6B-4EC8-4ACE-A351-4E6043A5ECD1}" src="https://github.com/user-attachments/assets/fe85a242-9d36-4683-a859-a8ee2df2fa5e" />
+Under the **IPv4 Route** section, configure the default route:
 
-!Click save:
+```text
+Prefix: 0.0.0.0/0
+Gateway: VPN
+Enable VPN: On
+```
 
-Expected Output:
+<img width="1405" height="312" alt="VE-VPN1 IPv4 Route Configuration" src="https://github.com/user-attachments/assets/4c0b9eb8-ae87-416f-b307-542d9b619bb1" />
 
-<img width="1401" height="44" alt="{B62DED3E-DB4A-4A81-BE6E-5721170495E4}" src="https://github.com/user-attachments/assets/b891f9d3-8022-4c56-9205-77c1a57df1b1" />
+Click **Add** to add the IPv4 route.
 
-Add template -> vEdge Cloud -> Other Templates -> OSPF
+### Expected Output - IPv4 Route Added
 
-<img width="1057" height="481" alt="{B077BB27-F3F0-4618-A4B3-2210195DE4DB}" src="https://github.com/user-attachments/assets/4ad64e8a-7f0a-458b-a96d-0c15721f4d61" />
+Verify that the route appears under the **IPv4 Route** section.
 
-~~~
+<img width="1405" height="191" alt="VE-VPN1 IPv4 Route Expected Output" src="https://github.com/user-attachments/assets/fe85a242-9d36-4683-a859-a8ee2df2fa5e" />
+
+Once the route has been verified, click **Save**.
+
+### Expected Output - VE-VPN1
+
+The `VE-VPN1` feature template should now appear in the **Feature Templates** list.
+
+<img width="1401" height="44" alt="VE-VPN1 Feature Template Expected Output" src="https://github.com/user-attachments/assets/b891f9d3-8022-4c56-9205-77c1a57df1b1" />
+
+---
+
+## STEP 43 - Create the OSPF-VPN1 Feature Template
+
+Create an OSPF feature template for **VPN 1**.
+
+Navigate to:
+
+```text
+Feature Templates
+    ↓
+Add Template
+    ↓
+vEdge Cloud
+    ↓
+Other Templates
+    ↓
+OSPF
+```
+
+Select the **OSPF** feature.
+
+<img width="1032" height="488" alt="Select vEdge OSPF Feature Template" src="https://github.com/user-attachments/assets/aaeabca2-0b5b-44e1-a5e2-54771fdf4d27" />
+
+Configure the template using the following values:
+
+```text
 Name: OSPF-VPN1
-Desc: OSPF-VPN1
+Description: OSPF-VPN1
 
 Redistribute:
-  Protocol: omp
+  Protocol: OMP
 
 Area:
-  Area Num: 0
+  Area Number: 0
+
   Interface:
     Interface Name: ge0/0
-	
-	ADD x2
 
-Advance:
-  Originate: Global: On
-  Always: Global: On
-~~~
+Advanced:
+  Originate:
+    Global: On
 
-!Under redistribute click "New Redistribute"
-!Click Add
+  Always:
+    On
+```
 
-<img width="1407" height="347" alt="{38828DCF-AFE9-4BDA-89EF-E282C0631084}" src="https://github.com/user-attachments/assets/ece11c4a-3dc3-47ee-a23e-c29879d5ae7c" />
+---
 
-!Under Area click "New Area"
+## STEP 44 - Configure OMP Redistribution into OSPF
 
-!Click Add Interface:
+Under the **Redistribute** section, select:
 
-<img width="401" height="39" alt="{2026DB67-F156-4BE0-B5C1-CAB025F48BCD}" src="https://github.com/user-attachments/assets/c0706b89-a51c-4bbd-8add-f40045bb2069" />
+```text
+Protocol: OMP
+```
 
-!Click Add Interface again:
+<img width="652" height="197" alt="Configure OMP Redistribution into OSPF" src="https://github.com/user-attachments/assets/1ebba6cd-c874-4df9-85f7-41ae1e93ebf7" />
 
-!Click Add x2:
+Click **Add** to add the redistribution configuration.
 
-Expected output:
+The OMP redistribution entry should now appear in the template:
 
-<img width="1374" height="159" alt="{77DDEC3C-CDF4-4C15-AE63-B68E2F1D0BDF}" src="https://github.com/user-attachments/assets/54616167-1ef0-4da9-913f-2c3c79c3d542" />
+<img width="1404" height="263" alt="OMP Redistribution Expected Output" src="https://github.com/user-attachments/assets/f5f83f62-c3b9-4bee-9073-c764e5bf609c" />
 
-under advanced
+> [!NOTE]
+> Redistributing **OMP into OSPF** allows routes learned through the SD-WAN overlay to be advertised toward the local OSPF domain.
 
-<img width="544" height="478" alt="{2092A04B-B6D4-4E66-ACBE-BE1B5EF09F53}" src="https://github.com/user-attachments/assets/8f40dfe0-272d-49e5-ab74-b4d205ac8969" />
+---
 
-!Click save
+## STEP 45 - Configure OSPF Area 0 and Interface ge0/0
 
-Expected output:
+Under the **Area** section, click:
 
-<img width="1391" height="37" alt="{F1A74198-AC18-4426-8142-FC1C07652D8B}" src="https://github.com/user-attachments/assets/d092e0b5-6232-4694-9eb1-b97e10b93d8f" />
+```text
+New Area
+```
 
-!Then edit the device template:
+Configure the OSPF area as:
 
-☰ Menu → Configuration -> Templates -> Device Templates
-VE-> 3 dots - > Edit
+```text
+Area Number: 0
+```
 
-<img width="1409" height="122" alt="{24AFBD9A-88D9-4644-9E74-8E990E7ED1AD}" src="https://github.com/user-attachments/assets/acebe6ed-9dcb-421b-8fa5-97020c7294ef" />
+Under the interface section, click **Add Interface**.
 
-Credentials:
+<img width="494" height="279" alt="Create OSPF Area 0" src="https://github.com/user-attachments/assets/e32b84b8-3e2f-4b5d-a480-076657443ebf" />
 
+Configure the interface as:
+
+```text
+Interface Name: ge0/0
+```
+
+<img width="588" height="420" alt="Configure ge0/0 OSPF Interface" src="https://github.com/user-attachments/assets/f2b00635-6c5b-4626-97eb-d8973f0f10f4" />
+
+Verify the interface configuration:
+
+<img width="579" height="433" alt="Verify OSPF ge0/0 Interface" src="https://github.com/user-attachments/assets/deea0375-e577-4375-8f6a-2c551b2cc528" />
+
+Click **Add** to add the interface.
+
+Then click **Add** again to add **Area 0** to the OSPF template.
+
+### Expected Output
+
+The OSPF Area 0 configuration should appear similar to the following:
+
+<img width="1391" height="235" alt="OSPF Area 0 Expected Output" src="https://github.com/user-attachments/assets/ab10190e-5e4e-4178-ab61-408ae7e4f0d9" />
+
+---
+
+## STEP 46 - Enable OSPF Default Route Origination
+
+Scroll down to the **Advanced** section.
+
+Configure the following options:
+
+```text
+Originate:
+  Global: On
+
+Always:
+  On
+```
+
+<img width="475" height="465" alt="Enable OSPF Default Route Origination" src="https://github.com/user-attachments/assets/092fe814-cba5-4c00-b028-6beca334aaf5" />
+
+Once all OSPF settings have been configured, click **Save**.
+
+### Expected Output
+
+Verify that the `OSPF-VPN1` feature template appears in the **Feature Templates** list.
+
+<img width="1376" height="36" alt="OSPF-VPN1 Feature Template Expected Output" src="https://github.com/user-attachments/assets/4f7fd16e-1a5f-40f7-80c7-41b778b2040c" />
+
+---
+
+# Update the vEdge Device Template
+
+## STEP 47 - Edit the VE-TEMP Device Template
+
+The existing `VE-TEMP` device template must now be updated to include **VPN 1** and **OSPF**.
+
+Navigate to:
+
+```text
+☰ Menu
+    ↓
+Configuration
+    ↓
+Templates
+    ↓
+Device Templates
+    ↓
+VE-TEMP
+    ↓
+...
+    ↓
+Edit
+```
+
+<img width="1428" height="420" alt="Edit VE-TEMP Device Template" src="https://github.com/user-attachments/assets/2dff34cd-f014-4ce0-a1e3-7db0948eb742" />
+
+The target configuration should be:
+
+```text
 Service VPN:
-  Add VPN: VE-VPN1
-    OSPF: VE-OSPF-VPN1
-	VPN Interface: VE-VPNINT-VPN0-GIG00
+  VPN: VE-VPN1
 
-Remove GIG00 From VPN 0
+  Additional Templates:
+    OSPF: OSPF-VPN1
+    VPN Interface: INT-VPN0-GE00
+
+Transport VPN:
+  VPN: VE-VPN0
+
+  VPN Interface:
+    INT-VPN0-GE01
+
+Management VPN:
+  VPN: VE-VPN512
+
+  VPN Interface:
+    VPN512-ETH0
+```
+
+> [!IMPORTANT]
+> The `ge0/0` interface template must be moved from **VPN 0** to **VPN 1**.
+>
+> `ge0/0` will be used for the LAN/service-side OSPF connection, while `ge0/1` remains associated with the transport VPN.
+
+---
+
+## STEP 48 - Add VE-VPN1 to the Service VPN
+
+Under **Service VPN**, click **Add VPN**.
+
+Select:
+
+```text
+VE-VPN1
+```
+
+Click the **right arrow (`>`)** to move the template to the selected section.
+
+<img width="1072" height="238" alt="Add VE-VPN1 to Service VPN" src="https://github.com/user-attachments/assets/6f78e12e-d1e2-4983-b24d-c19f2f25f0c9" />
+
+Confirm the VPN selection:
+
+<img width="180" height="47" alt="Confirm VE-VPN1 Selection" src="https://github.com/user-attachments/assets/b4b6b24d-3a5c-46d6-8465-93e5863493ef" />
+
+---
+
+## STEP 49 - Add OSPF and ge0/0 to VPN 1
+
+Under the newly added **VE-VPN1** service VPN, add the following templates:
+
+```text
+OSPF:
+  OSPF-VPN1
+
+VPN Interface:
+  INT-VPN0-GE00
+```
+
+Select **OSPF** and **VPN Interface**.
+
+<img width="1078" height="314" alt="Add OSPF and VPN Interface to VPN1" src="https://github.com/user-attachments/assets/f91dc900-a26a-4700-a1fb-fdff63dc602c" />
+
+Click **Add**.
+
+<img width="164" height="54" alt="Add VPN1 Feature Templates" src="https://github.com/user-attachments/assets/0873bd8e-41b3-461b-8a93-858fcb81067f" />
+
+### Expected Output
+
+Verify that VPN 1 contains the correct feature templates.
+
+<img width="1431" height="274" alt="VE-TEMP VPN1 Expected Output" src="https://github.com/user-attachments/assets/e753e840-ba3b-4ecb-89ce-ea073e9527b1" />
+
+> [!IMPORTANT]
+> Verify that `INT-VPN0-GE00` is no longer assigned under **VPN 0** before updating the device template.
+>
+> The intended interface assignment is:
+>
+> | Interface | VPN | Purpose |
+> | --- | ---: | --- |
+> | `ge0/0` | VPN `1` | LAN / Service-side OSPF |
+> | `ge0/1` | VPN `0` | Transport / WAN |
+> | `eth0` | VPN `512` | Management |
+
+Once the template assignments have been verified, click **Update**.
+
+---
+
+## STEP 50 - Re-enter the Device-Specific ge0/0 Addresses
+
+After updating `VE-TEMP`, vManage will redirect you to the device-template attachment page.
+
+<img width="1435" height="167" alt="vEdge Template Device Specific Configuration" src="https://github.com/user-attachments/assets/309bcc45-121f-4bd6-b617-afb6c57e8a46" />
+
+Because `ge0/0` uses a **Device Specific** variable, re-enter the appropriate IPv4 address for each vEdge.
+
+<img width="1435" height="159" alt="Re-enter vEdge ge0/0 IPv4 Addresses" src="https://github.com/user-attachments/assets/5b288803-2ccb-46e1-919c-3cfd444e1781" />
+
+Use the following addresses:
+
+| Device | `ge0/0` IPv4 Address |
+| --- | --- |
+| vEdge-LUZON | `172.16.1.1/30` |
+| vEdge-VISAYAS | `172.16.5.1/30` |
+
+> [!NOTE]
+> Verify the addresses against the EVE-NG topology before deploying the updated template.
+
+---
+
+## STEP 51 - Deploy the Updated VE-TEMP Configuration
+
+After entering the device-specific values, proceed with the deployment:
+
+```text
+Next
+  ↓
+Configure Devices
+  ↓
+Select the Confirmation Checkbox
+  ↓
+OK
+```
+
+Wait for vManage to validate and push the updated configuration to both vEdge devices.
+
+### Expected Output
+
+The deployment should complete successfully.
+
+<img width="1428" height="239" alt="Updated VE-TEMP Validation Success" src="https://github.com/user-attachments/assets/6967307a-d3f5-4ace-86d8-dd1c8c9d26a9" />
+
+> [!IMPORTANT]
+> Wait until the deployment reports **Validation Success** before testing connectivity.
+
+---
+
+# OSPF Connectivity Verification
+
+## STEP 52 - Verify Loopback Connectivity Between Luzon and Visayas
+
+Return to **SecureCRT** and access both campus switches.
+
+### From CSW-LUZON
+
+Ping the **CSW-VISAYAS Loopback 0** address:
+
+```text
+ping 2.2.2.2
+```
+
+### Expected Output
+
+The ping should succeed:
+
+<img width="625" height="201" alt="CSW-LUZON Ping to CSW-VISAYAS Loopback" src="https://github.com/user-attachments/assets/baa74cb6-c2cc-48cd-a351-5307aecd894a" />
+
+### From CSW-VISAYAS
+
+Ping the **CSW-LUZON Loopback 0** address:
+
+```text
+ping 1.1.1.1
+```
+
+### Expected Output
+
+The ping should succeed:
+
+<img width="617" height="165" alt="CSW-VISAYAS Ping to CSW-LUZON Loopback" src="https://github.com/user-attachments/assets/d42f692f-6e60-42eb-803f-5161895c2da8" />
+
+> [!IMPORTANT]
+> Successful bidirectional ping between `1.1.1.1` and `2.2.2.2` confirms that the Luzon and Visayas sites have end-to-end Layer 3 reachability across the SD-WAN environment.
+
+---
 
 
-<img width="1415" height="371" alt="{6161F6D4-266A-4E2F-B2BC-5C0F0C99A972}" src="https://github.com/user-attachments/assets/1d39f690-75c1-4264-a125-03e2372f1c78" />
 
-Under Service VPN click "add VPN"
 
-Select VE-VPN1 then click the > button in order to be selected
 
-<img width="1072" height="650" alt="{08AB9563-F7EC-4D44-9E10-0C6A4FFD958C}" src="https://github.com/user-attachments/assets/a93488d9-8ec8-4fbc-9abd-c6ba59159d0d" />
 
-!Click Next
 
-<img width="159" height="51" alt="{33F2D323-BFE9-4B35-B11A-AC897180D710}" src="https://github.com/user-attachments/assets/c9f14af1-672c-4457-9b6b-a80ded03341b" />
 
-Click VPN Interface -> select INT-VPN0-GE00 
 
-<img width="1077" height="648" alt="{F7A5C33D-6D3E-47AB-831B-E80B9472B7BE}" src="https://github.com/user-attachments/assets/0f9ab928-c568-4f6d-8594-b6afeabd35bf" />
-
-Click add
-
-Expected Output:
-
-<img width="1424" height="277" alt="{FB3B28B7-E8DA-4B59-BFF5-4C4682D789CC}" src="https://github.com/user-attachments/assets/5e95dc20-6f44-4ce6-bb27-b9bdb17ef830" />
-
-Click update:
-
-Re-Enter the values of Vedge Luzon and Visayas:
-3dots -> Edit Device Template:
-
-<img width="1403" height="127" alt="{2031C412-6C68-4F52-A33C-2660297ECDD4}" src="https://github.com/user-attachments/assets/c7cd29cf-1838-41e1-bb7c-12f67ff25e01" />
-
-Expected Output:
-
-<img width="1413" height="110" alt="{D92930F0-F98F-48DE-9EF2-08AC53B7C2D0}" src="https://github.com/user-attachments/assets/d0ec7614-56b8-4def-9036-379b8aa3129b" />
-
-Click Next -> Configure Devices -> Click the box - Ok
-
-Wait for 1 minute for Success Validation:
-
-Expected Output:
-
-<img width="1416" height="325" alt="{3E84DA4F-E02C-4F61-8629-2BF8B34E0C66}" src="https://github.com/user-attachments/assets/d000b4e6-ba91-4535-9c2c-d4f284df1cc7" />
-
-Then access the CLI of CSW luzon and visayas and verify if the Lo0 is pingable:
 
 
 
