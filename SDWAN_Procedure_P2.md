@@ -1,4 +1,33 @@
-<img width="541" height="411" alt="{9B06C390-1589-4B75-8E53-200130A1741F}" src="https://github.com/user-attachments/assets/a45a4ccd-cfd0-4af1-9c41-c0a0ebda2eb6" /><img width="529" height="524" alt="{523CA1A1-C6E8-4946-A6FF-F4952C84C79A}" src="https://github.com/user-attachments/assets/6ca934f7-76a9-4308-94c8-0b3f2e1da51c" /><img width="471" height="108" alt="{B532F118-447E-4C13-8189-2798D3B154F9}" src="https://github.com/user-attachments/assets/7a77d897-a722-4abe-b708-35c9c4866442" /><img width="881" height="348" alt="{1CB9E72C-0BF5-4797-90BF-FAF9381C7BA5}" src="https://github.com/user-attachments/assets/49415ed7-e0ae-4357-a9ed-b6ddef3caf82" /><img width="886" height="518" alt="{BFE3E1EF-E010-4DD3-B4C0-8778BA062632}" src="https://github.com/user-attachments/assets/62854a7b-1a39-4842-86e6-471e95cb0080" />
+# SD-WAN Lab - Part 2
+## PKI/CA Certificate Configuration and vEdge-MINDANAO Deployment
+
+This section continues from **SD-WAN Lab Part 1**.
+
+Part 2 covers:
+
+- Starting the PKI Server and Mindanao devices
+- Exporting the PKI Root CA certificate
+- Installing the Root CA certificate on `vEdge-MINDANAO`
+- Generating a Certificate Signing Request (CSR)
+- Signing the CSR using the PKI Server
+- Installing the granted certificate on `vEdge-MINDANAO`
+- Registering `vEdge-MINDANAO` with vManage and vBond
+- Synchronizing the vEdge certificate information with the controllers
+- Configuring `CSW-MINDANAO`
+- Attaching `vEdge-MINDANAO` to the existing device template
+- Verifying end-to-end connectivity between Mindanao and Luzon
+
+> [!IMPORTANT]
+> **SD-WAN Lab Part 1 must be completed and working properly before proceeding with Part 2.**
+>
+> The vManage, vSmart, vBond, CLOUD, feature templates, device templates, and existing SD-WAN configurations from Part 1 are required for this section.
+
+---
+
+# Device Console Reference
+
+Use the following console ports throughout Part 2:
+
 | Device | Port |
 | --- | ---: |
 | PKI SERVER | `32913` |
@@ -8,47 +37,123 @@
 | vEdge-MINDANAO | `32904` |
 | CSW-MINDANAO | `32907` |
 
+The Telnet IP address used in this lab is:
 
+```text
+208.8.8.187
+```
 
-Go to EVE|Topology
+---
 
-	power on the PKI server, TURN off vedge & csw visayas, and power vedge & and CSW mindanao
-	!NOTE!
-	WAIT FOR 10 MINS PKI SERVER TO PROPERLY SETUP
-	BEFORE PROCEEDING TO PART 2 SD-WAN CA, PART 1 MUST COMPLETE AND PROPERLY CONFIGURED
-	
-	
-<img width="249" height="233" alt="{93CEB256-089A-4BC8-9FDF-E999919986FB}" src="https://github.com/user-attachments/assets/4eb65c80-6402-4518-ba35-6739da3be336" />
+# PKI Server and Mindanao Device Preparation
 
-<img width="823" height="579" alt="{E86A8596-0C95-4F6C-9F55-503FCD1D5F5C}" src="https://github.com/user-attachments/assets/3282a983-3008-4bbf-bc80-bb498c1f61a9" />
+## STEP 1 - Prepare the EVE-NG Topology
 
-access the pki server & Vedge mindanao through secure crt telnet:
+Open the **EVE-NG topology**.
 
-Credentials:
-IPv4: 208.8.8.187
+Perform the following actions:
+
+1. Power on the **PKI SERVER**.
+2. Power off `vEdge-VISAYAS`.
+3. Power off `CSW-VISAYAS`.
+4. Power on `vEdge-MINDANAO`.
+5. Power on `CSW-MINDANAO`.
+
+<img width="249" height="233" alt="Start PKI Server and Mindanao Devices" src="https://github.com/user-attachments/assets/4eb65c80-6402-4518-ba35-6739da3be336" />
+
+Verify the topology status:
+
+<img width="823" height="579" alt="EVE-NG Part 2 Topology Status" src="https://github.com/user-attachments/assets/3282a983-3008-4bbf-bc80-bb498c1f61a9" />
+
+> [!IMPORTANT]
+> Wait approximately **10 minutes** after starting the PKI Server before proceeding.
+>
+> This allows the PKI Server enough time to complete its startup process.
+
+---
+
+## STEP 2 - Access the PKI Server and vEdge-MINDANAO
+
+Open **SecureCRT** and create Telnet sessions for the PKI Server and `vEdge-MINDANAO`.
+
+Use the following connection information:
+
+```text
+IP Address: 208.8.8.187
+Protocol: Telnet
+```
+
+| Device | Telnet Port |
+| --- | ---: |
 | PKI SERVER | `32913` |
 | vEdge-MINDANAO | `32904` |
 
-<img width="892" height="209" alt="{267CEC5F-A623-4374-A310-EF00BA93957B}" src="https://github.com/user-attachments/assets/9eb41b90-9e41-477e-ac7d-aa90aaadc78e" />
+Access the **PKI SERVER**:
 
-<img width="878" height="236" alt="{D9260403-AD85-439B-AD56-4F514F9CEF71}" src="https://github.com/user-attachments/assets/8f926cab-96f6-4031-854e-a27a600fcd79" />
+<img width="892" height="209" alt="PKI Server SecureCRT Access" src="https://github.com/user-attachments/assets/9eb41b90-9e41-477e-ac7d-aa90aaadc78e" />
 
+Access `vEdge-MINDANAO`:
 
-Go to Vmanage GUI:
+<img width="878" height="236" alt="vEdge-MINDANAO SecureCRT Access" src="https://github.com/user-attachments/assets/8f926cab-96f6-4031-854e-a27a600fcd79" />
 
-burger icon --> Configuration --> Certificates - send to controller
+---
 
-Expected Output:
+## STEP 3 - Synchronize the vEdge List with the Controllers
 
-<img width="902" height="418" alt="{4ABF98A6-8231-4461-83CB-4838976E87B0}" src="https://github.com/user-attachments/assets/abddc51e-d0d9-49d7-bddd-0f0118c48854" />
+Open the **vManage GUI**.
 
-  
-!@Go to PKI server:
-	conf t
-	crypto pki export rivanpki pem terminal
-	!copy CA root
+Navigate to:
 
-% CA certificate:
+```text
+☰ Menu
+    ↓
+Configuration
+    ↓
+Certificates
+```
+
+Click:
+
+```text
+Send to Controllers
+```
+
+Wait for the operation to complete.
+
+### Expected Output
+
+<img width="902" height="418" alt="Initial Send to Controllers Expected Output" src="https://github.com/user-attachments/assets/abddc51e-d0d9-49d7-bddd-0f0118c48854" />
+
+---
+
+# Root CA Certificate Installation
+
+## STEP 4 - Export the Root CA Certificate from the PKI Server
+
+Return to the **PKI SERVER** CLI.
+
+Enter configuration mode:
+
+```text
+conf t
+```
+
+Export the `rivanpki` CA certificate in PEM format:
+
+```text
+crypto pki export rivanpki pem terminal
+```
+
+The PKI Server will display the Root CA certificate in the terminal.
+
+### Root CA Certificate
+
+> [!NOTE]
+> **Example only:** The Root CA certificate shown below was generated by the PKI Server used in this lab and is provided for reference only.
+>
+> Your Root CA certificate will be different. Always copy and use the certificate generated by **your own PKI Server** instead of copying the example certificate below.
+
+```text
 -----BEGIN CERTIFICATE-----
 MIIDIDCCAgigAwIBAgIBATANBgkqhkiG9w0BAQsFADAhMR8wHQYDVQQDExZyb290
 Y2EuUklWQU5DT1JQLmxvY2FsMB4XDTI2MDExODE5MDIxMloXDTI5MDExNzE5MDIx
@@ -68,63 +173,170 @@ EthIAgr2uvKKbKJleBk9j5spAz9JS9nAI2nJ0D/scFbpxcxHtjuNSypGxbvUA6E8
 CihCAdhQxaGsO00S598LTCgtQepq3A0o39ER1u7L2Qa19lZXKr7jVVs7MTJlnXZo
 dVb5NArbTAGGmpvcr8FdxjMN8LPBvD9a22GpnHUkZJxI1iah
 -----END CERTIFICATE-----
+```
 
-<img width="755" height="655" alt="{BA2B9B71-3E0E-466E-A484-AC0CAF51CD65}" src="https://github.com/user-attachments/assets/f6b0d387-0cc8-42e1-88b0-3d5e2f3e89dc" />
+<img width="755" height="655" alt="Export Root CA Certificate from PKI Server" src="https://github.com/user-attachments/assets/f6b0d387-0cc8-42e1-88b0-3d5e2f3e89dc" />
 
-NOTE:
-copy the first - up to the last -
+> [!IMPORTANT]
+> Copy the **entire certificate**, starting from:
+>
+> ```text
+> -----BEGIN CERTIFICATE-----
+> ```
+>
+> and ending with:
+>
+> ```text
+> -----END CERTIFICATE-----
+> ```
+>
+> Do not omit the first or last line.
 
+---
 
-!@vedge-Mindanao Cisco:
+## STEP 5 - Create the Root CA Certificate File on vEdge-MINDANAO
+
+Access the `vEdge-MINDANAO` CLI.
+
+Enter the Linux shell:
+
+```text
 vshell
+```
+
+Navigate to the admin directory:
+
+```bash
 cd /home/admin/
-ls !for checking
+```
+
+Verify the available files and directories:
+
+```bash
+ls
+```
+
+Navigate to the `pkicerts` directory:
+
+```bash
 cd pkicerts/
+```
+
+Create a new certificate file:
+
+```bash
 vi rivan.ca
+```
 
-<img width="884" height="206" alt="{6763D8E4-AD06-4A21-88AF-485C6DDE0F20}" src="https://github.com/user-attachments/assets/22d60d87-7528-4fef-a1ce-20709bb95852" />
+<img width="884" height="206" alt="Create rivan.ca on vEdge-MINDANAO" src="https://github.com/user-attachments/assets/22d60d87-7528-4fef-a1ce-20709bb95852" />
 
-!Warning
-	!double enter!
-	!press i!
-	!copy ca root pki server and paste!
+---
 
-<img width="883" height="353" alt="{1D0F9941-9CE6-4529-9373-0CEBDD793039}" src="https://github.com/user-attachments/assets/397f3285-db60-4b57-a8d1-3b482739158a" />
+## STEP 6 - Paste the Root CA Certificate into rivan.ca
 
-	!press esc!
-	:wq
+Inside the `vi` editor:
 
-<img width="886" height="348" alt="{31021CA1-5436-4EF8-AB27-CFF2A32AE1DA}" src="https://github.com/user-attachments/assets/de6a8c48-892f-4853-b090-29c4932937b0" />
+1. Press **Enter twice**, if required.
+2. Press `i` to enter **Insert Mode**.
+3. Paste the complete Root CA certificate generated by your PKI Server.
 
-	ls
-  
-expected output:
+<img width="883" height="353" alt="Paste Root CA Certificate into rivan.ca" src="https://github.com/user-attachments/assets/397f3285-db60-4b57-a8d1-3b482739158a" />
 
-<img width="476" height="84" alt="{3554B0DF-49FC-416E-889E-F75AFFABAB60}" src="https://github.com/user-attachments/assets/183d57bd-049c-4917-92dd-6cd9ba44b8c6" />
+After pasting the certificate:
 
+1. Press `Esc`.
+2. Type:
+
+```text
+:wq
+```
+
+3. Press **Enter**.
+
+<img width="886" height="348" alt="Save rivan.ca Certificate File" src="https://github.com/user-attachments/assets/de6a8c48-892f-4853-b090-29c4932937b0" />
+
+Verify that the file exists:
+
+```bash
+ls
+```
+
+### Expected Output
+
+The `rivan.ca` file should appear in the directory.
+
+<img width="476" height="84" alt="Verify rivan.ca File" src="https://github.com/user-attachments/assets/183d57bd-049c-4917-92dd-6cd9ba44b8c6" />
+
+---
+
+## STEP 7 - Install the Root Certificate Chain
+
+Exit from `vshell`:
+
+```bash
 exit
+```
 
-request root-cert-chain install /home/admin/pkicerts/rivan.ca 
+Install the Root CA certificate on `vEdge-MINDANAO`:
 
-Expected Output:
+```text
+request root-cert-chain install /home/admin/pkicerts/rivan.ca
+```
 
-<img width="890" height="356" alt="{56C4DC37-C94D-4758-8330-D41664394A28}" src="https://github.com/user-attachments/assets/656a35bd-3322-4b5a-a3a7-f0dbf09b6b86" />
+### Expected Output
 
+The Root CA certificate chain should install successfully.
 
+<img width="890" height="356" alt="Root Certificate Chain Installation Expected Output" src="https://github.com/user-attachments/assets/656a35bd-3322-4b5a-a3a7-f0dbf09b6b86" />
 
-generate a CSR:
+> [!IMPORTANT]
+> Make sure the Root CA certificate installs successfully before generating the CSR.
+
+---
+
+# vEdge Certificate Signing Request
+
+## STEP 8 - Generate a CSR on vEdge-MINDANAO
+
+Generate a Certificate Signing Request and save it as `min.csr`:
+
+```text
 request csr upload /home/admin/pkicerts/min.csr
+```
 
+When prompted for the organization unit, enter:
+
+```text
 Enter organization-unit name : RIVANCORP
 Re-enter organization-unit name : RIVANCORP
+```
 
-<img width="890" height="468" alt="{4E58B55C-5B45-4C94-954E-36FE45493840}" src="https://github.com/user-attachments/assets/455d38ad-a996-4913-a9b3-545b9bd86357" />
+<img width="890" height="468" alt="Generate vEdge-MINDANAO CSR" src="https://github.com/user-attachments/assets/455d38ad-a996-4913-a9b3-545b9bd86357" />
 
+---
+
+## STEP 9 - Display and Copy the CSR
+
+Enter the Linux shell:
+
+```text
 vshell
-cat /home/admin/pkicerts/min.csr 
+```
 
-!copy CA request
+Display the generated CSR:
 
+```bash
+cat /home/admin/pkicerts/min.csr
+```
+
+### Certificate Signing Request
+
+> [!NOTE]
+> **Example only:** The Certificate Signing Request (CSR) shown below was generated by the `vEdge-MINDANAO` device used in this lab.
+>
+> Your CSR will be different. Always copy and use the CSR generated by **your own vEdge device** instead of copying the example CSR below.
+
+```text
 -----BEGIN CERTIFICATE REQUEST-----
 MIIDSTCCAjECAQAwgcgxCzAJBgNVBAYTAlVTMRMwEQYDVQQIEwpDYWxpZm9ybmlh
 MREwDwYDVQQHEwhTYW4gSm9zZTESMBAGA1UECxMJUklWQU5DT1JQMRYwFAYDVQQK
@@ -145,33 +357,81 @@ OLdXlc7Jlt4xROjulpu6MARHUh8V3pvuGVcNohEMWk7/2AsBfJxdmjUpoYEWGFHD
 Y9oYpWL/B2omrFlYdwYFPRoL5fErBEbteduC9XTKhFwRdAHfg6pRw0kct0pFbs3G
 6lsqAsj2fMgoFnRQLYx6sfIX7fX+oxU+duG86hQ=
 -----END CERTIFICATE REQUEST-----
+```
 
-<img width="883" height="433" alt="{02A0202A-7AE7-4102-84F0-2AF284BE1646}" src="https://github.com/user-attachments/assets/e6a12257-d1cf-4b46-b190-7e7284e8d4bb" />
+<img width="883" height="433" alt="Display vEdge-MINDANAO CSR" src="https://github.com/user-attachments/assets/e6a12257-d1cf-4b46-b190-7e7284e8d4bb" />
 
+> [!IMPORTANT]
+> Copy everything from:
+>
+> ```text
+> -----BEGIN CERTIFICATE REQUEST-----
+> ```
+>
+> through:
+>
+> ```text
+> -----END CERTIFICATE REQUEST-----
+> ```
 
+---
 
-optional:
+## STEP 10 - Optional: Inspect the Root CA Certificate
+
+This step is optional.
+
+From the vEdge Linux shell, navigate to:
+
+```bash
 cd /home/admin/pkicerts/
+```
+
+Inspect the Root CA certificate:
+
+```bash
 openssl x509 -in rivan.ca -text -noout
+```
 
-!@pki-server:
-crypto pki server rivanpki request pkcs10 terminal 
+This command can be used to verify the certificate details before continuing.
 
-<img width="539" height="113" alt="{DAB3FD5E-2DCB-46DB-9A01-AB82A5F1E650}" src="https://github.com/user-attachments/assets/01006abc-83ef-490e-99d6-a24f4c83862a" />
+---
 
+# Sign the CSR Using the PKI Server
 
-!paste CERTIFICATE REQUEST!
+## STEP 11 - Submit the CSR to the PKI Server
 
-<img width="527" height="341" alt="{A9506513-F669-4FD3-A54C-6D50777DF4B9}" src="https://github.com/user-attachments/assets/913f91a4-b106-4425-8bc1-06742f1cdefb" />
+Return to the **PKI SERVER** CLI.
 
-<img width="554" height="657" alt="{FBD59C17-15EB-46FC-9B82-DE867B9F5B9F}" src="https://github.com/user-attachments/assets/ab808b34-9338-43c4-a98a-77e37a01c593" />
+Run:
 
+```text
+crypto pki server rivanpki request pkcs10 terminal
+```
 
-!copy GRANTED CERTIFICATE!
+<img width="539" height="113" alt="PKI Server PKCS10 Request" src="https://github.com/user-attachments/assets/01006abc-83ef-490e-99d6-a24f4c83862a" />
 
+When prompted, paste the complete CSR copied from `vEdge-MINDANAO`.
 
+<img width="527" height="341" alt="Paste vEdge CSR into PKI Server" src="https://github.com/user-attachments/assets/913f91a4-b106-4425-8bc1-06742f1cdefb" />
 
-% Granted certificate:
+Allow the PKI Server to process and sign the certificate request.
+
+<img width="554" height="657" alt="PKI Server Certificate Signing Output" src="https://github.com/user-attachments/assets/ab808b34-9338-43c4-a98a-77e37a01c593" />
+
+---
+
+## STEP 12 - Copy the Granted Certificate
+
+After the CSR is successfully signed, the PKI Server will display a **Granted Certificate**.
+
+### Granted Certificate
+
+> [!NOTE]
+> **Example only:** The Granted Certificate shown below was generated by the PKI Server for the `vEdge-MINDANAO` device used in this lab.
+>
+> Your Granted Certificate will be different. Always copy and use the certificate issued by **your own PKI Server for your own vEdge device** instead of copying the example certificate below.
+
+```text
 -----BEGIN CERTIFICATE-----
 MIIDuDCCAqCgAwIBAgIBBzANBgkqhkiG9w0BAQsFADAhMR8wHQYDVQQDExZyb290
 Y2EuUklWQU5DT1JQLmxvY2FsMB4XDTI2MDkyMDEyMDQzNloXDTI3MDkyMDEyMDQz
@@ -194,79 +454,288 @@ LbTVSqj84eshxhjuovVxqNgm5AMcDigMA4vW/NuYGGvnBKhgY3jGA2TOOmfww0Ge
 iUsNrFeI2caWvx3b/SOGOOXfqZ1vMG8ezF6UaW9nziKx+tlrA5hcVmdPVKuAtDEb
 M3hNM5GLoqUdaSlnkyHQs5LbvGh7hIhfD37gYKdEtn6dHtxiYrsHhTYbQnU=
 -----END CERTIFICATE-----
+```
 
+> [!IMPORTANT]
+> Copy the **entire Granted Certificate**, including:
+>
+> ```text
+> -----BEGIN CERTIFICATE-----
+> ```
+>
+> and:
+>
+> ```text
+> -----END CERTIFICATE-----
+> ```
 
-vedge-mindanao cisco:
+---
+
+# Install the Signed Certificate on vEdge-MINDANAO
+
+## STEP 13 - Create the Granted Certificate File
+
+Return to `vEdge-MINDANAO`.
+
+Enter the Linux shell:
+
+```text
 vshell
+```
+
+Navigate to:
+
+```bash
 cd /home/admin/pkicerts/
+```
+
+Create a new file:
+
+```bash
 vi grant.ca
+```
 
-<img width="411" height="105" alt="{E24078D5-716C-42D3-B0E2-E7CC5D98B6C2}" src="https://github.com/user-attachments/assets/c60cac27-79e6-4a47-b096-ee03ff934853" />
+<img width="411" height="105" alt="Create grant.ca on vEdge-MINDANAO" src="https://github.com/user-attachments/assets/c60cac27-79e6-4a47-b096-ee03ff934853" />
 
-!double enter!
-!press i!
-!copy granted ca and paste!
+Inside the `vi` editor:
 
-<img width="881" height="348" alt="{1CB9E72C-0BF5-4797-90BF-FAF9381C7BA5}" src="https://github.com/user-attachments/assets/e80758ae-c6a6-48e1-81ff-098205f73aaf" />
+1. Press **Enter twice**, if required.
+2. Press `i` to enter **Insert Mode**.
+3. Paste the complete Granted Certificate generated for your vEdge.
 
-!press esc!
+<img width="881" height="348" alt="Paste Granted Certificate into grant.ca" src="https://github.com/user-attachments/assets/e80758ae-c6a6-48e1-81ff-098205f73aaf" />
+
+After pasting:
+
+1. Press `Esc`.
+2. Type:
+
+```text
 :wq
+```
 
-<img width="876" height="353" alt="{C5434C6A-FBAD-46AA-B878-867DEA866599}" src="https://github.com/user-attachments/assets/4362d6dd-453f-47b3-8fb0-3601ed754198" />
+3. Press **Enter**.
 
+<img width="876" height="353" alt="Save grant.ca Certificate File" src="https://github.com/user-attachments/assets/4362d6dd-453f-47b3-8fb0-3601ed754198" />
+
+Verify the file:
+
+```bash
 ls
+```
 
-expected output:
+### Expected Output
 
-<img width="471" height="108" alt="{B532F118-447E-4C13-8189-2798D3B154F9}" src="https://github.com/user-attachments/assets/0e40cad8-3930-4063-b243-b9bba712064c" />
+The `grant.ca` file should appear in the directory.
 
+<img width="471" height="108" alt="Verify grant.ca File" src="https://github.com/user-attachments/assets/0e40cad8-3930-4063-b243-b9bba712064c" />
+
+---
+
+## STEP 14 - Install the Granted Certificate
+
+Exit from `vshell`:
+
+```bash
 exit
+```
 
-vedge-mindanao cisco:
+Install the signed certificate:
+
+```text
 request certificate install /home/admin/pkicerts/grant.ca
+```
 
-<img width="837" height="191" alt="{B7BCE8E6-3F77-4B28-9365-FE90F1066778}" src="https://github.com/user-attachments/assets/3136f0c2-404e-4dde-abba-45bc55df8c61" />
+### Expected Output
 
+The certificate should install successfully.
+
+<img width="837" height="191" alt="Install Granted Certificate Expected Output" src="https://github.com/user-attachments/assets/3136f0c2-404e-4dde-abba-45bc55df8c61" />
+
+---
+
+## STEP 15 - Verify the vEdge Certificate Serial Number
+
+Display the certificate serial information:
+
+```text
 show certificate serial
+```
 
-<img width="644" height="130" alt="{BF40A532-02BE-45CA-B947-1F0A5248AAC2}" src="https://github.com/user-attachments/assets/93a5e7ee-9363-4c3e-b30b-7f97066af459" />
+<img width="644" height="130" alt="vEdge-MINDANAO Certificate Serial Output" src="https://github.com/user-attachments/assets/93a5e7ee-9363-4c3e-b30b-7f97066af459" />
 
-Chassis number: 5f4be17b-8e6a-46ae-9467-35b26f5d569a serial number: 07
+For this lab, the output provides the following values:
 
-vmanage & vbond:
+```text
+Chassis Number:
+5f4be17b-8e6a-46ae-9467-35b26f5d569a
 
+Serial Number:
+07
+```
+
+> [!NOTE]
+> **Example only:** The chassis number and certificate serial number shown above belong to the `vEdge-MINDANAO` device used in this lab.
+>
+> Your values may be different. Always use the chassis number and serial number displayed by **your own vEdge device** using:
+>
+> ```text
+> show certificate serial
+> ```
+
+> [!IMPORTANT]
+> Record the **Chassis Number** and **Serial Number** exactly as displayed. These values will be required when registering the vEdge with the SD-WAN controllers.
+
+---
+
+# Register vEdge-MINDANAO with the Controllers
+
+## STEP 16 - Register vEdge-MINDANAO with vManage and vBond
+
+After installing the signed certificate, register the vEdge **Chassis Number** and **Serial Number** with both **vManage** and **vBond**.
+
+For this lab, the example values are:
+
+```text
+Chassis Number: 5f4be17b-8e6a-46ae-9467-35b26f5d569a
+Serial Number: 07
+```
+
+> [!NOTE]
+> **Example only:** The chassis number and serial number used in the commands below belong to the `vEdge-MINDANAO` device used in this lab.
+>
+> Replace these values with the output from:
+>
+> ```text
+> show certificate serial
+> ```
+>
+> on **your own vEdge device**.
+
+> [!IMPORTANT]
+> The registration command must be executed on **both vManage and vBond**.
+
+### On vManage
+
+Access the **vManage CLI** through SecureCRT.
+
+Run:
+
+```text
 request vedge add chassis-num 5f4be17b-8e6a-46ae-9467-35b26f5d569a serial-num 07
+```
 
-<img width="783" height="103" alt="{D89E8021-21C6-41B9-A69C-2C4952CB32D4}" src="https://github.com/user-attachments/assets/49b3f713-cc81-4d5d-8482-c4ec5a351b80" />
+### Expected Output - vManage
 
-<img width="792" height="81" alt="{F02E1D6F-413F-4A21-BC2A-46C7E39FE382}" src="https://github.com/user-attachments/assets/cfd2b332-0db1-4ec4-b968-a79830d28d96" />
+<img width="783" height="103" alt="Register vEdge-MINDANAO with vManage" src="https://github.com/user-attachments/assets/49b3f713-cc81-4d5d-8482-c4ec5a351b80" />
 
+### On vBond
 
+Access the **vBond CLI** through SecureCRT.
 
-!optional!
-vsmart:
+Run the same registration command:
 
+```text
+request vedge add chassis-num 5f4be17b-8e6a-46ae-9467-35b26f5d569a serial-num 07
+```
+
+### Expected Output - vBond
+
+<img width="792" height="81" alt="Register vEdge-MINDANAO with vBond" src="https://github.com/user-attachments/assets/cfd2b332-0db1-4ec4-b968-a79830d28d96" />
+
+### Registration Verification
+
+At this point, the `vEdge-MINDANAO` chassis and serial information should be registered with:
+
+| Controller | Required |
+| --- | --- |
+| vManage | Yes |
+| vBond | Yes |
+
+> [!IMPORTANT]
+> Do not proceed with **Send to Controllers** until the vEdge chassis and serial numbers have been successfully added to both **vManage** and **vBond**.
+
+---
+
+## STEP 17 - Optional: Remove an Incorrect vEdge Entry from vSmart
+
+> [!WARNING]
+> This is an **optional troubleshooting step**.
+>
+> Run this command only if an incorrect or stale vEdge entry needs to be removed from vSmart. Do not perform this step during a normal successful registration unless removal is required.
+
+Access the **vSmart CLI**.
+
+Run:
+
+```text
 request vedge delete chassis-num 5f4be17b-8e6a-46ae-9467-35b26f5d569a serial-num 07
+```
 
+> [!NOTE]
+> The chassis and serial numbers shown in this command are **example values from this lab**. Use the correct values for your own vEdge device if this troubleshooting step is required.
 
-!@Vmanage GUI
-burger icon --> configuration --> Certificates --> send to controller
+---
 
-Expected Output:
+## STEP 18 - Synchronize the Updated vEdge List
 
-<img width="888" height="423" alt="{734F10C3-5414-469E-B1E7-1357DA0A5948}" src="https://github.com/user-attachments/assets/3c915aed-a1bf-4264-a9a2-8a5417fb4197" />
+Return to the **vManage GUI**.
 
+Navigate to:
 
-!output!
+```text
+☰ Menu
+    ↓
+Configuration
+    ↓
+Certificates
+```
 
-access the CSW mindanao:
+Click:
 
-Credentials:
-IPv4: 208.8.8.187
-| CSW-MINDANAO | `32907` |
+```text
+Send to Controllers
+```
 
-paste this preconfig:
+Wait for synchronization to complete.
 
+### Expected Output
+
+<img width="888" height="423" alt="vEdge-MINDANAO Send to Controllers Expected Output" src="https://github.com/user-attachments/assets/3c915aed-a1bf-4264-a9a2-8a5417fb4197" />
+
+> [!IMPORTANT]
+> Verify that `vEdge-MINDANAO` is recognized by the SD-WAN controllers before proceeding with the device-template deployment.
+
+---
+
+# CSW-MINDANAO Configuration
+
+## STEP 19 - Access CSW-MINDANAO
+
+Access `CSW-MINDANAO` through **SecureCRT using Telnet**.
+
+Use:
+
+```text
+IP Address: 208.8.8.187
+Protocol: Telnet
+Port: 32907
+```
+
+Enter privileged EXEC mode:
+
+```text
+enable
+```
+
+---
+
+## STEP 20 - Configure CSW-MINDANAO
+
+Paste the following preconfiguration:
+
+```text
+!@CSW-MINDANAO
 conf t
  hostname CSW-MINDANAO
  enable secret pass
@@ -297,34 +766,176 @@ conf t
   network 10.1.3.0 0.0.0.3 area 0
   passive-interface lo0
   end
-  
-<img width="897" height="647" alt="{FF4DBD65-3C3A-49D7-ABDC-811704497F18}" src="https://github.com/user-attachments/assets/2726db28-d5d2-44d4-a362-e7e0ba601139" />
+```
 
+### CSW-MINDANAO Configuration Summary
 
-burger icon --> configuration --> template --> device template
---> attach device --> attach vedge mindanao
+| Component | Configuration |
+| --- | --- |
+| Hostname | `CSW-MINDANAO` |
+| Loopback 0 | `3.3.3.3/32` |
+| GigabitEthernet0/0 | `172.16.9.2/30` |
+| GigabitEthernet0/1 | `10.1.3.2/30` |
+| OSPF Process | `1` |
+| OSPF Router ID | `3.3.3.3` |
+| OSPF Area | `0` |
 
-<img width="680" height="604" alt="{97F53F48-4024-4E3F-A5D5-69F1BC499515}" src="https://github.com/user-attachments/assets/3ddbd3dc-8a76-42ae-a5a7-af92ee83f84b" />
+### Expected Output
 
-!Press attach
+<img width="897" height="647" alt="CSW-MINDANAO Configuration Expected Output" src="https://github.com/user-attachments/assets/2726db28-d5d2-44d4-a362-e7e0ba601139" />
 
-3 dots --> edit device template
+---
 
+# Attach vEdge-MINDANAO to the Device Template
 
-<img width="529" height="524" alt="{523CA1A1-C6E8-4946-A6FF-F4952C84C79A}" src="https://github.com/user-attachments/assets/7776e182-aa44-4805-b125-1561b9d446eb" />
+## STEP 21 - Attach vEdge-MINDANAO to VE-TEMP
 
-Press Update:
+Return to the **vManage GUI**.
 
-<img width="264" height="90" alt="{FFABAE7E-E79D-4501-8880-830E45EBED63}" src="https://github.com/user-attachments/assets/150b2752-0ddf-4c53-8181-251068213d57" />
+Navigate to:
 
-press Next --> Configure Devices
+```text
+☰ Menu
+    ↓
+Configuration
+    ↓
+Templates
+    ↓
+Device Templates
+```
 
-Expected Output:
+Locate the existing device template:
 
-<img width="900" height="339" alt="{0F33BDAC-669D-42E7-AF78-EE820A511944}" src="https://github.com/user-attachments/assets/608d5061-051c-4eb8-98d1-3b5305a6e195" />
+```text
+VE-TEMP
+```
 
-Access the CSW Mindanao and ping the Lo0 of CSW Luzon:
+Open the **three-dot menu (`...`)** and select:
 
-<img width="602" height="172" alt="{7BF6F0CC-B7B9-4793-9831-989AA578B4C0}" src="https://github.com/user-attachments/assets/a4f46a34-1892-4aed-935f-21c6ded0354e" />
+```text
+Attach Devices
+```
 
+Select:
+
+```text
+vEdge-MINDANAO
+```
+
+Move `vEdge-MINDANAO` to the selected devices section.
+
+<img width="680" height="604" alt="Attach vEdge-MINDANAO to VE-TEMP" src="https://github.com/user-attachments/assets/3ddbd3dc-8a76-42ae-a5a7-af92ee83f84b" />
+
+Click **Attach**.
+
+---
+
+## STEP 22 - Configure the vEdge-MINDANAO Device-Specific Variables
+
+After attaching the device, open the **three-dot menu (`...`)** for `vEdge-MINDANAO`.
+
+Edit the device-specific values.
+
+<img width="529" height="524" alt="Edit vEdge-MINDANAO Device Specific Variables" src="https://github.com/user-attachments/assets/7776e182-aa44-4805-b125-1561b9d446eb" />
+
+Enter the Mindanao-specific values according to the **EVE-NG topology** and the variables required by `VE-TEMP`.
+
+Verify the following values carefully:
+
+- Hostname
+- System IP
+- Site ID
+- `ge0/0` IPv4 address
+- `ge0/1` IPv4 address
+
+Based on the CSW-MINDANAO topology, the service-side `ge0/0` interface should use the corresponding address in:
+
+```text
+172.16.9.0/30
+```
+
+The CSW side is configured as:
+
+```text
+CSW-MINDANAO G0/0: 172.16.9.2/30
+```
+
+Therefore, verify the vEdge side against the EVE-NG topology before applying the configuration.
+
+> [!IMPORTANT]
+> Always verify the **device-specific values against the EVE-NG topology** before deployment.
+>
+> Do not reuse the Luzon or Visayas device-specific values for `vEdge-MINDANAO`.
+
+After entering and verifying the required values, click **Update**.
+
+<img width="264" height="90" alt="Update vEdge-MINDANAO Device Specific Variables" src="https://github.com/user-attachments/assets/150b2752-0ddf-4c53-8181-251068213d57" />
+
+---
+
+## STEP 23 - Deploy VE-TEMP to vEdge-MINDANAO
+
+Proceed with the device-template deployment:
+
+```text
+Next
+    ↓
+Configure Devices
+    ↓
+Confirm
+```
+
+Wait for vManage to validate and deploy the configuration to `vEdge-MINDANAO`.
+
+### Expected Output
+
+The deployment should complete successfully.
+
+<img width="900" height="339" alt="vEdge-MINDANAO Device Template Deployment Expected Output" src="https://github.com/user-attachments/assets/608d5061-051c-4eb8-98d1-3b5305a6e195" />
+
+> [!IMPORTANT]
+> Wait until the device-template deployment and validation complete successfully before performing the final connectivity test.
+
+---
+
+# End-to-End Connectivity Verification
+
+## STEP 24 - Verify Mindanao-to-Luzon Loopback Connectivity
+
+Return to **SecureCRT** and access `CSW-MINDANAO`.
+
+Ping the **CSW-LUZON Loopback 0** address:
+
+```text
 ping 1.1.1.1
+```
+
+### Expected Output
+
+The ping should succeed:
+
+<img width="602" height="172" alt="CSW-MINDANAO Ping to CSW-LUZON Loopback" src="https://github.com/user-attachments/assets/a4f46a34-1892-4aed-935f-21c6ded0354e" />
+
+> [!IMPORTANT]
+> A successful ping to `1.1.1.1` confirms that `CSW-MINDANAO` can reach the Luzon site's Loopback 0 network through the SD-WAN environment.
+
+---
+
+# Part 2 Configuration Summary
+
+| Component | Configuration |
+| --- | --- |
+| PKI Server | `rivanpki` |
+| vEdge Device | `vEdge-MINDANAO` |
+| Root CA File | `/home/admin/pkicerts/rivan.ca` |
+| CSR File | `/home/admin/pkicerts/min.csr` |
+| Granted Certificate File | `/home/admin/pkicerts/grant.ca` |
+| CSW-MINDANAO Loopback | `3.3.3.3/32` |
+| CSW-MINDANAO G0/0 | `172.16.9.2/30` |
+| CSW-MINDANAO G0/1 | `10.1.3.2/30` |
+| OSPF Process | `1` |
+| OSPF Router ID | `3.3.3.3` |
+| Device Template | `VE-TEMP` |
+| Connectivity Test | `CSW-MINDANAO → 1.1.1.1` |
+
+---
