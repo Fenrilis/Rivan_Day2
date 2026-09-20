@@ -313,7 +313,13 @@ burger icon --> configuration --> template --> device template
 
 <img width="529" height="524" alt="{523CA1A1-C6E8-4946-A6FF-F4952C84C79A}" src="https://github.com/user-attachments/assets/7776e182-aa44-4805-b125-1561b9d446eb" />
 
+Press Update:
 
+<img width="264" height="90" alt="{FFABAE7E-E79D-4501-8880-830E45EBED63}" src="https://github.com/user-attachments/assets/150b2752-0ddf-4c53-8181-251068213d57" />
+
+press Next --> Configure Devices
+
+Expected Output:
 
 
 
