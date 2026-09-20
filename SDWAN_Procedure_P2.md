@@ -321,10 +321,10 @@ press Next --> Configure Devices
 
 Expected Output:
 
+<img width="900" height="339" alt="{0F33BDAC-669D-42E7-AF78-EE820A511944}" src="https://github.com/user-attachments/assets/608d5061-051c-4eb8-98d1-3b5305a6e195" />
 
+Access the CSW Mindanao and ping the Lo0 of CSW Luzon:
 
-
-
-
+<img width="602" height="172" alt="{7BF6F0CC-B7B9-4793-9831-989AA578B4C0}" src="https://github.com/user-attachments/assets/a4f46a34-1892-4aed-935f-21c6ded0354e" />
 
 ping 1.1.1.1
