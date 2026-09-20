@@ -1,4 +1,4 @@
-<img width="471" height="108" alt="{B532F118-447E-4C13-8189-2798D3B154F9}" src="https://github.com/user-attachments/assets/7a77d897-a722-4abe-b708-35c9c4866442" /><img width="881" height="348" alt="{1CB9E72C-0BF5-4797-90BF-FAF9381C7BA5}" src="https://github.com/user-attachments/assets/49415ed7-e0ae-4357-a9ed-b6ddef3caf82" /><img width="886" height="518" alt="{BFE3E1EF-E010-4DD3-B4C0-8778BA062632}" src="https://github.com/user-attachments/assets/62854a7b-1a39-4842-86e6-471e95cb0080" />
+<img width="541" height="411" alt="{9B06C390-1589-4B75-8E53-200130A1741F}" src="https://github.com/user-attachments/assets/a45a4ccd-cfd0-4af1-9c41-c0a0ebda2eb6" /><img width="529" height="524" alt="{523CA1A1-C6E8-4946-A6FF-F4952C84C79A}" src="https://github.com/user-attachments/assets/6ca934f7-76a9-4308-94c8-0b3f2e1da51c" /><img width="471" height="108" alt="{B532F118-447E-4C13-8189-2798D3B154F9}" src="https://github.com/user-attachments/assets/7a77d897-a722-4abe-b708-35c9c4866442" /><img width="881" height="348" alt="{1CB9E72C-0BF5-4797-90BF-FAF9381C7BA5}" src="https://github.com/user-attachments/assets/49415ed7-e0ae-4357-a9ed-b6ddef3caf82" /><img width="886" height="518" alt="{BFE3E1EF-E010-4DD3-B4C0-8778BA062632}" src="https://github.com/user-attachments/assets/62854a7b-1a39-4842-86e6-471e95cb0080" />
 | Device | Port |
 | --- | ---: |
 | PKI SERVER | `32913` |
@@ -229,23 +229,43 @@ request certificate install /home/admin/pkicerts/grant.ca
 
 show certificate serial
 
-!!!!
+<img width="644" height="130" alt="{BF40A532-02BE-45CA-B947-1F0A5248AAC2}" src="https://github.com/user-attachments/assets/93a5e7ee-9363-4c3e-b30b-7f97066af459" />
+
 Chassis number: 5f4be17b-8e6a-46ae-9467-35b26f5d569a serial number: 07
 
 vmanage & vbond:
 
 request vedge add chassis-num 5f4be17b-8e6a-46ae-9467-35b26f5d569a serial-num 07
 
+<img width="783" height="103" alt="{D89E8021-21C6-41B9-A69C-2C4952CB32D4}" src="https://github.com/user-attachments/assets/49b3f713-cc81-4d5d-8482-c4ec5a351b80" />
+
+<img width="792" height="81" alt="{F02E1D6F-413F-4A21-BC2A-46C7E39FE382}" src="https://github.com/user-attachments/assets/cfd2b332-0db1-4ec4-b968-a79830d28d96" />
+
+
+
 !optional!
 vsmart:
 
 request vedge delete chassis-num 5f4be17b-8e6a-46ae-9467-35b26f5d569a serial-num 07
 
-burger icon --> configuration --> send to controller
+
+!@Vmanage GUI
+burger icon --> configuration --> Certificates --> send to controller
+
+Expected Output:
+
+<img width="888" height="423" alt="{734F10C3-5414-469E-B1E7-1357DA0A5948}" src="https://github.com/user-attachments/assets/3c915aed-a1bf-4264-a9a2-8a5417fb4197" />
 
 
 !output!
-CSW mindanao:
+
+access the CSW mindanao:
+
+Credentials:
+IPv4: 208.8.8.187
+| CSW-MINDANAO | `32907` |
+
+paste this preconfig:
 
 conf t
  hostname CSW-MINDANAO
@@ -278,8 +298,27 @@ conf t
   passive-interface lo0
   end
   
-  
+<img width="897" height="647" alt="{FF4DBD65-3C3A-49D7-ABDC-811704497F18}" src="https://github.com/user-attachments/assets/2726db28-d5d2-44d4-a362-e7e0ba601139" />
+
+
 burger icon --> configuration --> template --> device template
 --> attach device --> attach vedge mindanao
+
+<img width="680" height="604" alt="{97F53F48-4024-4E3F-A5D5-69F1BC499515}" src="https://github.com/user-attachments/assets/3ddbd3dc-8a76-42ae-a5a7-af92ee83f84b" />
+
+!Press attach
+
+3 dots --> edit device template
+
+
+<img width="529" height="524" alt="{523CA1A1-C6E8-4946-A6FF-F4952C84C79A}" src="https://github.com/user-attachments/assets/7776e182-aa44-4805-b125-1561b9d446eb" />
+
+
+
+
+
+
+
+
 
 ping 1.1.1.1
